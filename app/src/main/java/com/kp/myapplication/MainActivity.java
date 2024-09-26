@@ -12,6 +12,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -24,10 +26,16 @@ import okhttp3.Call;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String API_URL = "https://api.openai.com/v1/models";
-    private static final String API_KEY = "OpenAI_API_Key";  // Replace with your OpenAI API key
+    private static final String API_URL = "https://api.openai.com/v1/completions";
+    private static final String API_KEY = "YOUR_OPENAI_API_KEY";  // Replace with your OpenAI API key
     private EditText answerEditText;
-    private TextView feedbackTextView;
+    private TextView feedbackTextView, questionTextView;
+    private Button submitAnswerButton;
+
+    // Variables to handle multiple questions
+    private ArrayList<String> questions;
+    private int currentQuestionIndex = 0;
+    private int totalQuestions = 5; // We want to ask 5 questions
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,33 +43,57 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // UI elements
-        TextView questionTextView = findViewById(R.id.questionTextView);
+        questionTextView = findViewById(R.id.questionTextView);
         answerEditText = findViewById(R.id.answerEditText);
         feedbackTextView = findViewById(R.id.feedbackTextView);
-        Button submitAnswerButton = findViewById(R.id.submitAnswerButton);
+        submitAnswerButton = findViewById(R.id.submitAnswerButton);
 
-        // List of questions
-        String[] questions = {
-                "What is your greatest strength?",
-                "Why should we hire you?",
-                "Tell me about a challenge you faced and how you handled it.",
-                "Where do you see yourself in five years?",
-                "Describe a situation where you demonstrated leadership."
-        };
+        // Prepare a list of questions
+        prepareQuestionList();
 
-        // Pick a random question from the list
-        String randomQuestion = questions[(int) (Math.random() * questions.length)];
-        questionTextView.setText(randomQuestion);
+        // Show the first question
+        displayNextQuestion();
 
         // Submit answer button click listener
         submitAnswerButton.setOnClickListener(view -> {
             String userAnswer = answerEditText.getText().toString();
             if (!userAnswer.isEmpty()) {
-                sendAnswerToGPT(userAnswer);
+                sendAnswerToGPT(userAnswer);  // Send answer to GPT for analysis
             } else {
                 Toast.makeText(MainActivity.this, "Please enter your answer.", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    // Method to create a list of interview questions
+    private void prepareQuestionList() {
+        questions = new ArrayList<>();
+        questions.add("What is your greatest strength?");
+        questions.add("Why should we hire you?");
+        questions.add("Tell me about a challenge you faced and how you handled it.");
+        questions.add("Where do you see yourself in five years?");
+        questions.add("Describe a situation where you demonstrated leadership.");
+        questions.add("What are your weaknesses?");
+        questions.add("Why do you want to work for this company?");
+        questions.add("Tell me about a time you failed and how you handled it.");
+        questions.add("How do you handle pressure and stress?");
+        questions.add("What motivates you to do your best work?");
+
+        // Shuffle the questions to ensure randomness
+        Collections.shuffle(questions);
+    }
+
+    // Method to display the next question
+    private void displayNextQuestion() {
+        if (currentQuestionIndex < totalQuestions) {
+            String currentQuestion = questions.get(currentQuestionIndex);
+            questionTextView.setText(currentQuestion);
+            currentQuestionIndex++;
+        } else {
+            // All questions have been asked
+            questionTextView.setText("Interview Complete. Thank you!");
+            submitAnswerButton.setEnabled(false); // Disable the submit button
+        }
     }
 
     // Method to send user answer to OpenAI GPT model for analysis
@@ -71,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             // Building the request body
-            jsonBody.put("model", "GPT-4 Turbo and GPT-4");  // Use the GPT model
+            jsonBody.put("model", "text-davinci-003");  // Use the GPT model
             jsonBody.put("prompt", "Analyze the following answer: " + answer);
             jsonBody.put("max_tokens", 100);
             jsonBody.put("temperature", 0.5);
@@ -95,9 +127,7 @@ public class MainActivity extends AppCompatActivity {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                // Handle the error scenario
                 e.printStackTrace();
-                // Update UI with failure feedback
                 runOnUiThread(() -> feedbackTextView.setText("Network error, please try again!"));
             }
 
@@ -110,13 +140,16 @@ public class MainActivity extends AppCompatActivity {
                         String feedback = jsonResponse.getJSONArray("choices").getJSONObject(0).getString("text");
 
                         // Updating UI with feedback
-                        runOnUiThread(() -> feedbackTextView.setText(feedback.trim()));
+                        runOnUiThread(() -> {
+                            feedbackTextView.setText(feedback.trim());
+                            displayNextQuestion();  // Move to the next question after showing feedback
+                            answerEditText.setText("");  // Clear the answer field
+                        });
                     } catch (JSONException e) {
                         e.printStackTrace();
                         runOnUiThread(() -> feedbackTextView.setText("Error in response format."));
                     }
                 } else {
-                    // Handle unsuccessful responses
                     runOnUiThread(() -> feedbackTextView.setText("Error: " + response.message()));
                 }
             }
