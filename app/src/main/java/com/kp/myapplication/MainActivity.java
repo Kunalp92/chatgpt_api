@@ -25,7 +25,7 @@ import okhttp3.Call;
 public class MainActivity extends AppCompatActivity {
 
     private static final String API_URL = "https://api.openai.com/v1/models";
-    private static final String API_KEY = "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";  // Replace with your OpenAI API key
+    private static final String API_KEY = "OpenAI_API_Key";  // Replace with your OpenAI API key
     private EditText answerEditText;
     private TextView feedbackTextView;
 
