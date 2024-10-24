@@ -38,7 +38,7 @@ In the `MainActivity.java` file, locate the following line:
 ```java
 private static final String API_KEY = "YOUR_OPENAI_API_KEY";
 ```
-Replace `"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"` with your actual API key from OpenAI.
+Replace `"use your own API key"` with your actual API key from OpenAI.
 
 ## Run the App
 1. Connect your Android device or set up an emulator in Android Studio.
